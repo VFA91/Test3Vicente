@@ -68,7 +68,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Querys.txt" />
+    <Content Include="Querys.sql" />
     <Content Include="ScriptDataBase.sql" />
   </ItemGroup>
   <ItemGroup>
@@ -87,9 +87,6 @@
       <Project>{B9E7D025-83A8-4CEF-81BC-780E047C77D8}</Project>
       <Name>Domain.Entities</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <WCFMetadata Include="Service References\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

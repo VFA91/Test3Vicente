@@ -32,33 +32,7 @@ namespace Test3Vicente
             //UpdateDateEvent(7);
         }
 
-        //private static List<string> GetNameGuestOneEvent()
-        //{
-        //    List<string> names = new List<string>();
-        //    //Escriba un método en que liste el nombre de todos los invitados que están inscriptos en al menos un evento
-        //    using (var db = new EventManagement())
-        //    {
-        //        var guests = db.Guest.Include("Event").Where(g => g.Event.Any());
-        //        names = guests.Select(n => n.FirstName).ToList();
-        //    }
-
-        //    return names;
-        //}
-
-        //private static void UpdateDateEvent(int days)
-        //{
-        //    //Escriba un método en que actualice la fecha de todos los eventos programados para que sean realizados una semana después.
-        //    using (var db = new EventManagement())
-        //    {
-        //        var result = db.Event.Where(e => e.EventId > 0);
-
-        //        foreach (var item in result)
-        //        {
-        //            item.Date = item.Date.AddDays(7);
-        //        }
-        //        db.SaveChanges();
-        //    }
-        //}
+        
 
         private static IContainer Autofac()
         {
@@ -69,6 +43,9 @@ namespace Test3Vicente
             builder.RegisterType<DataFactory>().As<IDataFactory>().SingleInstance();
             builder.RegisterType<UnitOfWork>().As<IUnitOfWork>().SingleInstance();
             builder.RegisterType<CityRepository>().As<ICityRepository>().SingleInstance();
+            builder.RegisterType<GuestRepository>().As<IGuestRepository>().SingleInstance();
+            builder.RegisterType<EventRepository>().As<IEventRepository>().SingleInstance();
+            builder.RegisterType<ServiceRepository>().As<IServiceRepository>().SingleInstance();
             builder.RegisterType<App>().As<IApp>().SingleInstance();
 
             // Build the container to finalize registrations
