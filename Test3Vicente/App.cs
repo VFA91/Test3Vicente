@@ -5,8 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Data.Entity;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Test3Vicente
 {
@@ -26,16 +24,31 @@ namespace Test3Vicente
             IGuestRepository guestRepository,
             IServiceRepository serviceRepository)
         {
+            if (unitOfWork == null)
+                throw new ArgumentNullException();
             _unitOfWork = unitOfWork;
+
+            if (cityRepository == null)
+                throw new ArgumentNullException();
             _cityRepository = cityRepository;
+
+            if (eventRepository == null)
+                throw new ArgumentNullException();
             _eventRepository = eventRepository;
+
+            if (guestRepository == null)
+                throw new ArgumentNullException();
             _guestRepository = guestRepository;
+
+            if (serviceRepository == null)
+                throw new ArgumentNullException();
             _serviceRepository = serviceRepository;
         }
 
         public void Run()
         {
             InserDataToDataBase();
+
             GetNameGuestOneEvent();
             UpdateDateEvent(WEEK);
         }
@@ -71,76 +84,197 @@ namespace Test3Vicente
 
         private void InserDataToDataBase()
         {
-            bool insertRelationship = false;
+            bool insertGuest = false;
+            bool insertEvent = false;
+            bool insertService = false;
             InsertCity();
-            insertRelationship = InsertGuest();
-            insertRelationship = InsertEvent();
-            insertRelationship = InsertService();
+            insertGuest = InsertGuest();
+            insertEvent = InsertEvent();
+            insertService = InsertService();
 
-            if (insertRelationship)
-            {
-                InsertGuestEvent();
-                InsertGuestService();
-                InsertEventService();
-            }
+            InsertRelationship(insertGuest, insertEvent, insertService);
         }
 
-        private void InsertEventService()
+        private void InsertRelationship(bool insertGuest, bool insertEvent, bool insertService)
         {
-            var eventIds = _eventRepository.GetAll().ToList().Select(e => e.EventId);
-            var serviceIds = _serviceRepository.GetAll().ToList().Select(s => s.ServiceId);
+            if (insertGuest && insertEvent)
+                InsertGuestEvent();
 
-            for (int i = 0; i < 15; i++)
-            {
-                int eventId, serviceId;
-                RandomIds(eventIds, serviceIds, out eventId, out serviceId);
+            if (insertService && insertEvent)
+                InsertEventService();
 
-                var eventEntity = _eventRepository.GetById(eventId);
-                eventEntity.Service.Add(_serviceRepository.GetById(serviceId));
-                _unitOfWork.Commit();
-            }
+            if (insertGuest && insertService)
+                InsertGuestService();
         }
+
+        #region INSERT Relationship Entities
+
+        #region GuestEvent
 
         private void InsertGuestEvent()
         {
             var guestIds = _guestRepository.GetAll().ToList().Select(g => g.GuestId);
             var eventIds = _eventRepository.GetAll().ToList().Select(e => e.EventId);
 
-            for (int i = 0; i < 15; i++)
-            {
-                int guestId, eventId;
-                RandomIds(guestIds, eventIds, out guestId, out eventId);
+            GenerateRelationshipGuestEvent(guestIds, eventIds);
+        }
 
+        private void GenerateRelationshipGuestEvent(IEnumerable<int> guestIds, IEnumerable<int> eventIds)
+        {
+            var numGuest = guestIds.Count();
+            var numEvent = eventIds.Count();
+
+            for (int i = 0; i < GetSeventyFivePercentId(numGuest); i++)
+            {
+                var guestId = guestIds.ElementAt(i);
                 var guest = _guestRepository.GetById(guestId);
-                guest.Event.Add(_eventRepository.GetById(eventId));
-                _unitOfWork.Commit();
+                InsertEventsInGuestIdentity(eventIds, numEvent, guest);
+                DeleteRandomEventsInGuestIdentity(guest, eventIds);
+            }
+
+            _unitOfWork.Commit();
+        }
+
+        private void InsertEventsInGuestIdentity(IEnumerable<int> eventIds, int numEvent, Guest guest)
+        {
+            for (int i = 0; i < GetFiftyPercentId(numEvent); i++)
+            {
+                var eventId = eventIds.ElementAt(i);
+                var eventEntity = _eventRepository.GetById(eventId);
+                guest.Event.Add(eventEntity);
             }
         }
 
-        private static void RandomIds(IEnumerable<int> firstIds, IEnumerable<int> secondsIds, out int firstId, out int secondId)
+        private void DeleteRandomEventsInGuestIdentity(Guest guest, IEnumerable<int> eventIds)
         {
-            Random rnd = new Random();
-            firstId = rnd.Next(firstIds.Count());
-            secondId = rnd.Next(secondsIds.Count());
-            firstId = firstId == 0 ? firstId + 1 : firstId;
-            secondId = secondId == 0 ? secondId + 1 : secondId;
+            var countEvent = guest.Event.Count();
+            Random random = new Random();
+            var number = random.Next(0, countEvent);
+            for (int i = 0; i < number; i++)
+            {
+                var eventId = eventIds.ElementAt(i);
+                var eventEntity = _eventRepository.GetById(eventId);
+                guest.Event.Remove(eventEntity);
+            }
         }
+
+        #endregion
+
+        #region EventService
+
+        private void InsertEventService()
+        {
+            var eventIds = _eventRepository.GetAll().ToList().Select(e => e.EventId);
+            var serviceIds = _serviceRepository.GetAll().ToList().Select(s => s.ServiceId);
+
+            GenerateRelationshipEventService(eventIds, serviceIds);
+        }
+
+        private void GenerateRelationshipEventService(IEnumerable<int> eventIds, IEnumerable<int> serviceIds)
+        {
+            var numEvent = eventIds.Count();
+            var numService = serviceIds.Count();
+
+            for (int i = 0; i < GetSeventyFivePercentId(numEvent); i++)
+            {
+                var eventId = eventIds.ElementAt(i);
+                var eventEntity = _eventRepository.GetById(eventId);
+                InsertServicesInEventIdentity(serviceIds, numService, eventEntity);
+                DeleteRandomServicesInEventIdentity(eventEntity, serviceIds);
+            }
+
+            _unitOfWork.Commit();
+        }
+
+        private void InsertServicesInEventIdentity(IEnumerable<int> serviceIds, int numService, Event eventEntity)
+        {
+            for (int i = 0; i < GetFiftyPercentId(numService); i++)
+            {
+                var serviceId = serviceIds.ElementAt(i);
+                var serviceEntity = _serviceRepository.GetById(serviceId);
+                eventEntity.Service.Add(serviceEntity);
+            }
+        }
+
+        private void DeleteRandomServicesInEventIdentity(Event eventEntity, IEnumerable<int> serviceIds)
+        {
+            var countService = eventEntity.Service.Count();
+            Random random = new Random();
+            var number = random.Next(0, countService);
+            for (int i = 0; i < number; i++)
+            {
+                var serviceId = serviceIds.ElementAt(i);
+                var service = _serviceRepository.GetById(serviceId);
+                eventEntity.Service.Remove(service);
+            }
+        }
+
+        #endregion
+
+        #region GuestService
 
         private void InsertGuestService()
         {
-            var guestIds = _guestRepository.GetAll().ToList().Select(g => g.GuestId);
-            var serviceIds = _serviceRepository.GetAll().ToList().Select(s => s.ServiceId);
+            var guestIds = _guestRepository.GetAll().Where(g => g.Event.Any()).ToList().Select(g => g.GuestId);
+            var serviceIds = _serviceRepository.GetAll().Where(s => s.Event.Any()).ToList().Select(s => s.ServiceId);
 
-            for (int i = 0; i < 15; i++)
+            GenerateRelationshipGuestService(guestIds, serviceIds);
+        }
+
+        private void GenerateRelationshipGuestService(IEnumerable<int> guestIds, IEnumerable<int> serviceIds)
+        {
+            var numGuest = guestIds.Count();
+            var numService = serviceIds.Count();
+
+            for (int i = 0; i < GetSeventyFivePercentId(numGuest); i++)
             {
-                int guestId, serviceId;
-                RandomIds(guestIds, serviceIds, out guestId, out serviceId);
-
+                var guestId = guestIds.ElementAt(i);
                 var guest = _guestRepository.GetById(guestId);
-                guest.Service.Add(_serviceRepository.GetById(serviceId));
-                _unitOfWork.Commit();
+                InsertServiceInGuestIdentity(serviceIds, numService, guest);
+                DeleteRandomServiceInGuestIdentity(guest, serviceIds);
+            }
+
+            _unitOfWork.Commit();
+        }
+
+        private void InsertServiceInGuestIdentity(IEnumerable<int> serviceIds, int numService, Guest guest)
+        {
+            for (int i = 0; i < GetFiftyPercentId(numService); i++)
+            {
+                var servicetId = serviceIds.ElementAt(i);
+                var service = _serviceRepository.GetById(servicetId);
+                guest.Service.Add(service);
             }
         }
+
+        private void DeleteRandomServiceInGuestIdentity(Guest guest, IEnumerable<int> serviceIds)
+        {
+            var countService = guest.Service.Count();
+            Random random = new Random();
+            var number = random.Next(0, countService);
+            for (int i = 0; i < number; i++)
+            {
+                var serviceId = serviceIds.ElementAt(i);
+                var service = _serviceRepository.GetById(serviceId);
+                guest.Service.Remove(service);
+            }
+        }
+
+        #endregion
+
+        private int GetSeventyFivePercentId(int total)
+        {
+            return (total / 2) + (total / 2) / 2;
+        }
+
+        private int GetFiftyPercentId(int total)
+        {
+            return total / 2;
+        }
+
+        #endregion
+
+        #region INSERT Entities
 
         private bool InsertService()
         {
@@ -169,16 +303,16 @@ namespace Test3Vicente
             var numEvents = _eventRepository.GetAll().Count();
             if (numEvents <= 0)
             {
-                _eventRepository.Add(new Event { Description = "Evento 1", Date = DateTime.Now.AddDays(1), CityId = 1 });
-                _eventRepository.Add(new Event { Description = "Evento 2", Date = DateTime.Now.AddDays(10), CityId = 1 });
-                _eventRepository.Add(new Event { Description = "Evento 3", Date = DateTime.Now.AddDays(20), CityId = 1 });
-                _eventRepository.Add(new Event { Description = "Evento 4", Date = DateTime.Now.AddDays(30), CityId = 2 });
-                _eventRepository.Add(new Event { Description = "Evento 5", Date = DateTime.Now.AddDays(40), CityId = 2 });
-                _eventRepository.Add(new Event { Description = "Evento 6", Date = DateTime.Now.AddDays(50), CityId = 3 });
-                _eventRepository.Add(new Event { Description = "Evento 7", Date = DateTime.Now.AddDays(60), CityId = 3 });
-                _eventRepository.Add(new Event { Description = "Evento 8", Date = DateTime.Now.AddDays(70), CityId = 4 });
-                _eventRepository.Add(new Event { Description = "Evento 9", Date = DateTime.Now.AddDays(80), CityId = 5 });
-                _eventRepository.Add(new Event { Description = "Evento 10", Date = DateTime.Now.AddDays(90), CityId = 6 });
+                _eventRepository.Add(new Event { Description = "Evento 1", Date = DateTime.Now.AddDays(1), CityId = GetCityId() });
+                _eventRepository.Add(new Event { Description = "Evento 2", Date = DateTime.Now.AddDays(10), CityId = GetCityId() });
+                _eventRepository.Add(new Event { Description = "Evento 3", Date = DateTime.Now.AddDays(20), CityId = GetCityId() });
+                _eventRepository.Add(new Event { Description = "Evento 4", Date = DateTime.Now.AddDays(30), CityId = GetCityId() });
+                _eventRepository.Add(new Event { Description = "Evento 5", Date = DateTime.Now.AddDays(40), CityId = GetCityId() });
+                _eventRepository.Add(new Event { Description = "Evento 6", Date = DateTime.Now.AddDays(50), CityId = GetCityId() });
+                _eventRepository.Add(new Event { Description = "Evento 7", Date = DateTime.Now.AddDays(60), CityId = GetCityId() });
+                _eventRepository.Add(new Event { Description = "Evento 8", Date = DateTime.Now.AddDays(70), CityId = GetCityId() });
+                _eventRepository.Add(new Event { Description = "Evento 9", Date = DateTime.Now.AddDays(80), CityId = GetCityId() });
+                _eventRepository.Add(new Event { Description = "Evento 10", Date = DateTime.Now.AddDays(90), CityId = GetCityId() });
 
                 _unitOfWork.Commit();
 
@@ -194,22 +328,28 @@ namespace Test3Vicente
 
             if (numGuests <= 0)
             {
-                _guestRepository.Add(new Guest { FirstName = "Vicente", LastName = "Fernández", Mail = "Vicente@gmail.com", CityId = 2 });
-                _guestRepository.Add(new Guest { FirstName = "Paco", LastName = "Hernández", Mail = "Paco@gmail.com", CityId = 1, Phone = 999999999 });
-                _guestRepository.Add(new Guest { FirstName = "Luis", LastName = "García", Mail = "Luis@gmail.com", CityId = 3 });
-                _guestRepository.Add(new Guest { FirstName = "Maria", LastName = "López", Mail = "Maria@gmail.com", CityId = 5 });
-                _guestRepository.Add(new Guest { FirstName = "Antonia", LastName = "Horcajada", Mail = "Antonia@gmail.com", CityId = 1 });
-                _guestRepository.Add(new Guest { FirstName = "Lucio", LastName = "Antolín", Mail = "Lucio@gmail.com", CityId = 3, Phone = 777777777 });
-                _guestRepository.Add(new Guest { FirstName = "Carlos", LastName = "Caminero", Mail = "Carlos@gmail.com", CityId = 1 });
-                _guestRepository.Add(new Guest { FirstName = "Antonio", LastName = "Rojo", Mail = "Antonio@gmail.com", CityId = 9 });
-                _guestRepository.Add(new Guest { FirstName = "Mar", LastName = "López", Mail = "Mar@gmail.com", CityId = 1 });
-                _guestRepository.Add(new Guest { FirstName = "Juan", LastName = "Hoz", Mail = "Juan@gmail.com", CityId = 11 });
-                _guestRepository.Add(new Guest { FirstName = "Hector", LastName = "García", Mail = "Hector@gmail.com", CityId = 3, Phone = 666666666 });
-                _guestRepository.Add(new Guest { FirstName = "Jon", LastName = "Hernández", Mail = "Jon@gmail.com", CityId = 7 });
-                _guestRepository.Add(new Guest { FirstName = "Laura", LastName = "Hoz", Mail = "Laura@gmail.com", CityId = 1 });
-                _guestRepository.Add(new Guest { FirstName = "Jose", LastName = "Horcajada", Mail = "Jose@gmail.com", CityId = 3 });
-                _guestRepository.Add(new Guest { FirstName = "Esperanza", LastName = "Fernández", Mail = "Esperanza@gmail.com", CityId = 1 });
-                _guestRepository.Add(new Guest { FirstName = "Julio", LastName = "Caminero", Mail = "Julio@gmail.com", CityId = 10 });
+                _guestRepository.Add(new Guest { FirstName = "Vicente", LastName = "Fernández", Mail = "Vicente@gmail.com", CityId = GetCityId() });
+                _guestRepository.Add(new Guest { FirstName = "Paco", LastName = "Hernández", Mail = "Paco@gmail.com", CityId = GetCityId(), Phone = 999999999 });
+                _guestRepository.Add(new Guest { FirstName = "Luis", LastName = "García", Mail = "Luis@gmail.com", CityId = GetCityId() });
+                _guestRepository.Add(new Guest { FirstName = "Maria", LastName = "López", Mail = "Maria@gmail.com", CityId = GetCityId() });
+                _guestRepository.Add(new Guest { FirstName = "Antonia", LastName = "Gutierrez", Mail = "Antonia@gmail.com", CityId = GetCityId() });
+                _guestRepository.Add(new Guest { FirstName = "Lucio", LastName = "Antolín", Mail = "Lucio@gmail.com", CityId = GetCityId(), Phone = 777777777 });
+                _guestRepository.Add(new Guest { FirstName = "Carlos", LastName = "Caminero", Mail = "Carlos@gmail.com", CityId = GetCityId() });
+                _guestRepository.Add(new Guest { FirstName = "Antonio", LastName = "Rojo", Mail = "Antonio@gmail.com", CityId = GetCityId() });
+                _guestRepository.Add(new Guest { FirstName = "Mar", LastName = "López", Mail = "Mar@gmail.com", CityId = GetCityId() });
+                _guestRepository.Add(new Guest { FirstName = "Juan", LastName = "Hoz", Mail = "Juan@gmail.com", CityId = GetCityId() });
+                _guestRepository.Add(new Guest { FirstName = "Hector", LastName = "García", Mail = "Hector@gmail.com", CityId = GetCityId(), Phone = 666666666 });
+                _guestRepository.Add(new Guest { FirstName = "Jon", LastName = "Hernández", Mail = "Jon@gmail.com", CityId = GetCityId() });
+                _guestRepository.Add(new Guest { FirstName = "Laura", LastName = "Hoz", Mail = "Laura@gmail.com", CityId = GetCityId() });
+                _guestRepository.Add(new Guest { FirstName = "Jose", LastName = "Gutierrez", Mail = "Jose@gmail.com", CityId = GetCityId() });
+                _guestRepository.Add(new Guest { FirstName = "Esperanza", LastName = "Fernández", Mail = "Esperanza@gmail.com", CityId = GetCityId() });
+                _guestRepository.Add(new Guest { FirstName = "Julio", LastName = "Caminero", Mail = "Julio@gmail.com", CityId = GetCityId() });
+                _guestRepository.Add(new Guest { FirstName = "Ruben", LastName = "Ortefa", Mail = "Ruben@gmail.com", CityId = GetCityId(), Phone = 111111111 });
+                _guestRepository.Add(new Guest { FirstName = "Miriam", LastName = "Ruiz", Mail = "Miriam@gmail.com", CityId = GetCityId(), Phone = 222222222 });
+                _guestRepository.Add(new Guest { FirstName = "Eva", LastName = "María", Mail = "Eva@gmail.com", CityId = GetCityId(), Phone = 333333333 });
+                _guestRepository.Add(new Guest { FirstName = "Elena", LastName = "Ayala", Mail = "Elena@gmail.com", CityId = GetCityId(), Phone = 444444444 });
+                _guestRepository.Add(new Guest { FirstName = "Victor", LastName = "Fernández", Mail = "Victor@gmail.com", CityId = GetCityId(), Phone = 555555555 });
+                _guestRepository.Add(new Guest { FirstName = "Jorge", LastName = "Martín", Mail = "Jorge@gmail.com", CityId = GetCityId(), Phone = 888888888 });
 
                 _unitOfWork.Commit();
 
@@ -240,5 +380,23 @@ namespace Test3Vicente
                 _unitOfWork.Commit();
             }
         }
+
+        private int GetCityId()
+        {
+            var cityIds = _cityRepository.GetAll();
+            var ids = _cityRepository.GetAll().Select(i => i.CityId).ToList();
+            var idRandom = GetIdRandom(ids);
+            return cityIds.ToList().ElementAt(idRandom).CityId;
+        }
+
+        private static int GetIdRandom(List<int> ids)
+        {
+            Random random = new Random();
+            var id = random.Next(ids.Count());
+            id = id == 0 ? id + 1 : id;
+            return id;
+        }
+
+        #endregion
     }
 }

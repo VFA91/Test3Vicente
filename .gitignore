@@ -240,3 +240,5 @@ ModelManifest.xml
 
 # FAKE - F# Make
 .fake/
+/Domain.Core/Respositories/IEventRepository.cs
+/Data/Repositories/EventRepository.cs

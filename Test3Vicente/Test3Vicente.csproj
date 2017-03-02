@@ -68,6 +68,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="DiagramTest3Vicente.PNG" />
     <Content Include="Querys.sql" />
     <Content Include="ScriptDataBase.sql" />
   </ItemGroup>

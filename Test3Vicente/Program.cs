@@ -3,13 +3,6 @@ using Data;
 using Data.Repositories;
 using Domain.Core;
 using Domain.Core.Respositories;
-using Domain.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Test3Vicente;
 
 namespace Test3Vicente
 {
@@ -24,15 +17,7 @@ namespace Test3Vicente
                 var init = scope.Resolve<IApp>();
                 init.Run();
             }
-
-            //LoadDataBase();
-
-
-            //GetNameGuestOneEvent();
-            //UpdateDateEvent(7);
         }
-
-        
 
         private static IContainer Autofac()
         {

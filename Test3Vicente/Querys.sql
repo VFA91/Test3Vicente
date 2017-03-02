@@ -1,4 +1,5 @@
 ﻿--Listar todos los eventos con la cantidad de invitados correspondiente
+
 SELECT [Description],
        [Date],
        Ci.Name,
@@ -42,7 +43,7 @@ group by S.Name, C.Name
 --Listar todos los nombres de los invitados y las fechas de los eventos en los cuales están inscriptos, considerar el caso de invitados sin eventos.
 
 SELECT CONCAT([FirstName] + ' ',[LastName]) AS NombreCompleto ,
-       E.Date
+       E.Date, e.Description
 FROM [EventManagement].[dbo].[Guest] G
 LEFT JOIN [EventManagement].[dbo].[GuestEvent] Ge ON G.GuestId = Ge.GuestId
 LEFT JOIN [EventManagement].[dbo].[Event] E ON Ge.EventId = E.EventId

@@ -1,12 +1,8 @@
 ﻿using Data.Model;
 using Domain.Core;
 using System;
-using System.Collections.Generic;
 using System.Data.Entity;
 using System.Linq;
-using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Data.Repositories
 {
@@ -39,11 +35,6 @@ namespace Data.Repositories
             return _dbset.AsNoTracking().AsQueryable();
         }
 
-        public virtual IQueryable<TEntity> GetAllAsNoTracking()
-        {
-            return _dbset.AsQueryable();
-        }
-
         public virtual void Add(TEntity entityToAdd)
         {
             _dbset.Add(entityToAdd);
@@ -60,13 +51,6 @@ namespace Data.Repositories
             _dbset.Remove(entityToDelete);
         }
 
-        public virtual void Delete(Expression<Func<TEntity, bool>> where)
-        {
-            IEnumerable<TEntity> objects = _dbset.Where<TEntity>(where).AsEnumerable();
-            foreach (TEntity obj in objects)
-                _dbset.Remove(obj);
-        }
-
         public virtual TEntity GetById(long id)
         {
             return _dbset.Find(id);
@@ -77,15 +61,6 @@ namespace Data.Repositories
             return _dbset.Find(id);
         }
 
-        public virtual IQueryable<TEntity> GetMany(Expression<Func<TEntity, bool>> where)
-        {
-            return _dbset.AsNoTracking().Where(where).AsQueryable();
-        }
-
-        public TEntity Get(Expression<Func<TEntity, bool>> where)
-        {
-            return _dbset.Where(where).FirstOrDefault<TEntity>();
-        }
         public void Dispose()
         {
 
